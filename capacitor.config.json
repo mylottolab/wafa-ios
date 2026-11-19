@@ -1,0 +1,30 @@
+{
+  "appId": "com.weaveapp.wafa",
+  "appName": "WAFA",
+  "webDir": "www",
+  "server": {
+    "url": "https://wafa.kr/wafa_start.html",
+    "cleartext": false,
+    "allowNavigation": [
+      "wafa.kr",
+      "*.wafa.kr",
+      "azredlrnvsssfjytaotb.supabase.co",
+      "*.supabase.co"
+    ]
+  },
+  "ios": {
+    "contentInset": "always",
+    "allowsLinkPreview": false,
+    "scrollEnabled": true,
+    "preferredContentMode": "mobile"
+  },
+  "plugins": {
+    "PushNotifications": {
+      "presentationOptions": [
+        "badge",
+        "sound",
+        "alert"
+      ]
+    }
+  }
+}

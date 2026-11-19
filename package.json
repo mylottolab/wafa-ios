@@ -1,0 +1,15 @@
+{
+  "name": "wafa-ios",
+  "version": "1.0.0",
+  "private": true,
+  "description": "와파 WAFA 아이폰 앱 껍데기 (wafa.kr 화면을 띄웁니다)",
+  "dependencies": {
+    "@capacitor/cli": "^8.5.1",
+    "@capacitor/core": "^8.5.1",
+    "@capacitor/ios": "^8.5.1",
+    "@capacitor/push-notifications": "^8.1.2"
+  },
+  "devDependencies": {
+    "xcode": "3.0.1"
+  }
+}
