@@ -805,11 +805,11 @@ final class AliasStore {
     func manage() {
         Task { @MainActor in
             guard let scene = UIApplication.shared.connectedScenes.first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene else {
-                if let u = URL(string: "https://apps.apple.com/account/subscriptions") { UIApplication.shared.open(u) }
+                if let u = URL(string: "https://apps.apple.com/account/subscriptions") { UIApplication.shared.open(u, options: [:], completionHandler: nil) }
                 return
             }
             do { try await AppStore.showManageSubscriptions(in: scene) }
-            catch { if let u = URL(string: "https://apps.apple.com/account/subscriptions") { UIApplication.shared.open(u) } }
+            catch { if let u = URL(string: "https://apps.apple.com/account/subscriptions") { UIApplication.shared.open(u, options: [:], completionHandler: nil) } }
         }
     }
 
