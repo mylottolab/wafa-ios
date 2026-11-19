@@ -592,6 +592,8 @@ final class AliasCalls: NSObject, PKPushRegistryDelegate, CXProviderDelegate, WK
             wv.allowsBackForwardNavigationGestures = true
             // 🔴 2026-10-12 — 화면이 좌우로 흔들리지 않게: 옆으로 튕기기를 끄고, 옆으로 밀린 화면은 바로 제자리로
             wv.scrollView.alwaysBounceHorizontal = false
+            // 🔴 2026-11-19 와파 — 번호판 · 다이얼을 누를 때 화면 전체가 위아래로 출렁이지 않게(고무줄 스크롤 끔). 긴 화면은 그대로 스크롤됩니다
+            wv.scrollView.bounces = false
             wv.scrollView.showsHorizontalScrollIndicator = false
             xWatch = wv.scrollView.observe(\.contentOffset, options: [.new]) { sv, _ in
                 let left = -sv.adjustedContentInset.left
