@@ -34,8 +34,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // 🔴 1.8 — 제어 센터 "누름 걸기" 단추가 앱을 열면 그 라인 화면으로(NureumShared.swift)
-        nureumOpenHandler = { url in _ = AliasNureum.open(url) }
+        // 와파는 위젯 · 제어 센터 단추가 없어 NureumShared.swift 를 넣지 않습니다(바로너의 nureumOpenHandler 줄을 뺌)
         // 🔴 1.8b — 앱이 화면에 올라올 때 제어 센터 단추가 남긴 쪽지 확인
         NotificationCenter.default.addObserver(forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main) { _ in
             for d in [0.3, 1.0, 2.5] { DispatchQueue.main.asyncAfter(deadline: .now() + d) { AliasNureum.claimPending() } }
@@ -804,12 +803,13 @@ final class AliasStore {
 
     /* 🔴 2026-11-19 와파 — 구독 바꾸기 · 해지: 애플 구독 관리 창을 앱 안에서 엽니다 */
     func manage() {
-        DispatchQueue.main.async {
+        Task { @MainActor in
             guard let scene = UIApplication.shared.connectedScenes.first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene else {
                 if let u = URL(string: "https://apps.apple.com/account/subscriptions") { UIApplication.shared.open(u) }
                 return
             }
-            Task { try? await AppStore.showManageSubscriptions(in: scene) }
+            do { try await AppStore.showManageSubscriptions(in: scene) }
+            catch { if let u = URL(string: "https://apps.apple.com/account/subscriptions") { UIApplication.shared.open(u) } }
         }
     }
 
