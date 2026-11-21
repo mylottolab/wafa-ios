@@ -147,6 +147,20 @@ final class AliasCalls: NSObject, PKPushRegistryDelegate, CXProviderDelegate, WK
         provider.setDelegate(self, queue: DispatchQueue.main)
     }
 
+    /* 🔴 2026-11-21 와파 「전화 올 때」 — ring(벨+진동) · vibrate(진동만) · silent(소리 없음)
+         진동만 · 소리 없음은 소리 없는 벨소리(silence.caf)를 씁니다. 진동은 아이폰 설정(사운드 및 햅틱)을 따릅니다.
+         ⚠ silence.caf 가 앱에 없으면 아이폰이 기본 벨소리로 울립니다(조용해지지는 않지만 전화는 그대로 옴). */
+    static let ringKey = "wafa_ring"
+    func applyRingMode() {
+        let m = UserDefaults.standard.string(forKey: AliasCalls.ringKey) ?? "ring"
+        let cfg = provider.configuration
+        let want: String? = (m == "ring") ? nil : "silence.caf"
+        if cfg.ringtoneSound != want {
+            cfg.ringtoneSound = want
+            provider.configuration = cfg
+        }
+    }
+
     func start() {
         if registry != nil { return }
         let r = PKPushRegistry(queue: .main)
@@ -214,6 +228,7 @@ final class AliasCalls: NSObject, PKPushRegistryDelegate, CXProviderDelegate, WK
         }
 
         /* ── 새 전화: 아이폰 기본 전화 화면으로 울립니다 ── */
+        applyRingMode()   // 🔴 2026-11-21 와파 설정의 벨 · 진동 · 무음
         let who = s("who").isEmpty ? AliasCalls.appName : s("who")
         let u = UUID()
         let upd = CXCallUpdate()
@@ -553,6 +568,8 @@ final class AliasCalls: NSObject, PKPushRegistryDelegate, CXProviderDelegate, WK
         callEnded: function(){ post({ act: 'endCall', id: '' }); },
         /* 🔴 2026-10-18 (1.3) — 스피커 ↔ 수화기. 통화가 붙으면 영상은 스피커, 음성은 수화기로 시작 */
         setSpeaker: function(on){ post({ act: 'setSpeaker', on: !!on }); },
+        /* 🔴 2026-11-21 와파 「전화 올 때」 벨 · 진동 · 무음 */
+        setRingMode: function(m){ post({ act: 'setRingMode', mode: String(m || 'ring') }); },
         /* 🔴 2026-10-20 (1.5) — 음성 통화를 시작할 때는 소리 설정을 건드리지 않습니다(아이폰 마이크가 무음이 되던 원인).
            영상 통화만 스피커로 시작합니다. audioV2 = 화면이 "1.5 이상" 임을 알아보는 표시 */
         audioV2: true,
@@ -639,6 +656,10 @@ final class AliasCalls: NSObject, PKPushRegistryDelegate, CXProviderDelegate, WK
         case "hello": attachWeb()
         case "inCall": liveCall = (m["on"] as? Bool) ?? false; applyBackGesture(); if !liveCall { AliasSpeaker.reset() }
         case "setSpeaker": AliasSpeaker.set((m["on"] as? Bool) ?? false)
+        case "setRingMode":   // 🔴 2026-11-21 와파 「전화 올 때」 벨 · 진동 · 무음
+            let v = (m["mode"] as? String) ?? "ring"
+            UserDefaults.standard.set(["ring", "vibrate", "silent"].contains(v) ? v : "ring", forKey: AliasCalls.ringKey)
+            AliasCalls.shared.applyRingMode()
         case "shortcuts": AliasShortcuts.set(m["items"] as? [[String: Any]] ?? [])
         case "storeManage": AliasStore.shared.manage()   // 🔴 2026-11-19 와파 — 구독 관리(애플 화면)
         default: break

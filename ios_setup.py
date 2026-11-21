@@ -86,8 +86,30 @@ if 'CODE_SIGN_ENTITLEMENTS' not in s:
     s = s.replace(key, key + '\t\t\t\tCODE_SIGN_ENTITLEMENTS = App/App.entitlements;\n')
 s = s.replace('TARGETED_DEVICE_FAMILY = "1,2";', 'TARGETED_DEVICE_FAMILY = 1;')
 # 🔴 2026-10-18 — 앱 버전(App Store 에 보이는 번호). 1.0 심사 통과 뒤 첫 업데이트 = 1.1
-APP_VERSION = '1.0'   # 🔴 2026-11-19 와파 첫 판
+APP_VERSION = '1.1'   # 🔴 2026-11-21 와파 1.1 — 벨 · 진동 · 무음, 아래위 흰 띠, 음성 안내 등
 s = re.sub(r'MARKETING_VERSION = [^;]+;', 'MARKETING_VERSION = ' + APP_VERSION + ';', s)
+# 🔴 2026-11-21 소리 없는 벨소리(silence.caf) — 「진동만 · 소리 없음」 때 CallKit 이 씀. 앱 묶음(Resources)에 넣습니다.
+#    capacitor.config.json 이 들어간 자리 네 곳을 본떠 한 줄씩 더합니다. 못 찾으면 건너뜀(그때는 기본 벨소리로 울림).
+if os.path.exists('silence.caf') and 'silence.caf' not in s:
+    shutil.copy('silence.caf', A + 'silence.caf')
+    BF, FR = 'A1B2C3D4E5F6071829304A5B', 'A1B2C3D4E5F6071829304A5C'
+    lines = s.split('\n'); out = []; hits = 0
+    for ln in lines:
+        out.append(ln)
+        t = ln.strip()
+        ind = ln[:len(ln) - len(ln.lstrip())]
+        if '/* capacitor.config.json in Resources */ = {isa = PBXBuildFile;' in t:
+            out.append(ind + BF + ' /* silence.caf in Resources */ = {isa = PBXBuildFile; fileRef = ' + FR + ' /* silence.caf */; };'); hits += 1
+        elif '/* capacitor.config.json */ = {isa = PBXFileReference;' in t:
+            out.append(ind + FR + ' /* silence.caf */ = {isa = PBXFileReference; lastKnownFileType = file; path = silence.caf; sourceTree = "<group>"; };'); hits += 1
+        elif re.match(r'^[0-9A-F]{24} /\* capacitor\.config\.json \*/,$', t):
+            out.append(ind + FR + ' /* silence.caf */,'); hits += 1
+        elif re.match(r'^[0-9A-F]{24} /\* capacitor\.config\.json in Resources \*/,$', t):
+            out.append(ind + BF + ' /* silence.caf in Resources */,'); hits += 1
+    if hits == 4:
+        s = '\n'.join(out); print('silence.caf 를 앱에 넣었습니다')
+    else:
+        print('⚠ silence.caf 를 넣을 자리를 다 못 찾았습니다(' + str(hits) + '/4) — 기본 벨소리로 울립니다')
 open(p, 'w').write(s)
 print(APP_NAME + ' iOS 설정을 넣었습니다 (' + APP_ID + ')')
 
