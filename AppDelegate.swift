@@ -151,6 +151,21 @@ final class AliasCalls: NSObject, PKPushRegistryDelegate, CXProviderDelegate, WK
          진동만 · 소리 없음은 소리 없는 벨소리(silence.caf)를 씁니다. 진동은 아이폰 설정(사운드 및 햅틱)을 따릅니다.
          ⚠ silence.caf 가 앱에 없으면 아이폰이 기본 벨소리로 울립니다(조용해지지는 않지만 전화는 그대로 옴). */
     static let ringKey = "wafa_ring"
+
+    /* 🔴 2026-11-21 와파 — 앱이 비워 둔 위 · 아래 자리(흰 띠)를 화면 바탕색으로 */
+    static func applyBg(hex: String, dark: Bool) {
+        guard hex.count == 6, let v = UInt32(hex, radix: 16) else { return }
+        let c = UIColor(red: CGFloat((v >> 16) & 0xFF) / 255, green: CGFloat((v >> 8) & 0xFF) / 255, blue: CGFloat(v & 0xFF) / 255, alpha: 1)
+        guard let wv = AliasCalls.shared.currentWebView() else { return }
+        wv.isOpaque = false
+        wv.backgroundColor = c
+        wv.scrollView.backgroundColor = c
+        if #available(iOS 15.0, *) { wv.underPageBackgroundColor = c }
+        if let win = wv.window {
+            win.backgroundColor = c
+            win.overrideUserInterfaceStyle = dark ? .dark : .light   // 시계 · 배터리 글자: 어두운 바탕이면 흰 글자
+        }
+    }
     func applyRingMode() {
         let m = UserDefaults.standard.string(forKey: AliasCalls.ringKey) ?? "ring"
         let cfg = provider.configuration
@@ -570,6 +585,7 @@ final class AliasCalls: NSObject, PKPushRegistryDelegate, CXProviderDelegate, WK
         setSpeaker: function(on){ post({ act: 'setSpeaker', on: !!on }); },
         /* 🔴 2026-11-21 와파 「전화 올 때」 벨 · 진동 · 무음 */
         setRingMode: function(m){ post({ act: 'setRingMode', mode: String(m || 'ring') }); },
+        setBg: function(c, dark){ post({ act: 'setBg', color: String(c || ''), dark: !!dark }); },
         /* 🔴 2026-10-20 (1.5) — 음성 통화를 시작할 때는 소리 설정을 건드리지 않습니다(아이폰 마이크가 무음이 되던 원인).
            영상 통화만 스피커로 시작합니다. audioV2 = 화면이 "1.5 이상" 임을 알아보는 표시 */
         audioV2: true,
@@ -656,6 +672,10 @@ final class AliasCalls: NSObject, PKPushRegistryDelegate, CXProviderDelegate, WK
         case "hello": attachWeb()
         case "inCall": liveCall = (m["on"] as? Bool) ?? false; applyBackGesture(); if !liveCall { AliasSpeaker.reset() }
         case "setSpeaker": AliasSpeaker.set((m["on"] as? Bool) ?? false)
+        case "setBg":   // 🔴 2026-11-21 와파 — 위(시계 줄) · 아래(홈 막대) 흰 띠를 화면 바탕색으로, 시계 글자색도 맞춤
+            let hex = ((m["color"] as? String) ?? "").replacingOccurrences(of: "#", with: "")
+            let dark = (m["dark"] as? Bool) ?? false
+            DispatchQueue.main.async { AliasCalls.applyBg(hex: hex, dark: dark) }
         case "setRingMode":   // 🔴 2026-11-21 와파 「전화 올 때」 벨 · 진동 · 무음
             let v = (m["mode"] as? String) ?? "ring"
             UserDefaults.standard.set(["ring", "vibrate", "silent"].contains(v) ? v : "ring", forKey: AliasCalls.ringKey)
